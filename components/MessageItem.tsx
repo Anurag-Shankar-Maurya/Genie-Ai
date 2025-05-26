@@ -1,27 +1,23 @@
 
 import React from 'react';
+import { marked, Marked } from 'marked';
 import { Message, MessageRole } from '../types';
-import { IconUserCircle, IconSparkles } from '../constants'; // Assuming IconSparkles for Genie
+import { IconUserCircle, IconSparkles } from '../constants';
+
+// Configure marked
+const markedInstance = new Marked({
+  gfm: true, // Enable GitHub Flavored Markdown
+  breaks: false, // Default GFM behavior for line breaks
+  pedantic: false,
+  sanitize: false, // IMPORTANT: If content can be user-input from untrusted sources, use DOMPurify or similar after marked
+  mangle: false,
+  headerIds: false,
+});
+
 
 interface MessageItemProps {
   message: Message;
 }
-
-const CodeBlock: React.FC<{ code: string; language?: string }> = ({ code, language }) => {
-  return (
-    <div className="my-2 bg-gray-900 rounded-md overflow-hidden">
-      {language && (
-        <div className="text-xs text-gray-400 px-4 py-1 bg-gray-800 border-b border-gray-700">
-          {language}
-        </div>
-      )}
-      <pre className="p-4 text-sm text-gray-200 overflow-x-auto">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-};
-
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
   const isUser = message.role === MessageRole.USER;
@@ -29,20 +25,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
   const isError = message.role === MessageRole.ERROR;
   const isSystem = message.role === MessageRole.SYSTEM;
 
-  // Simple Markdown-like parsing for code blocks
-  const renderContent = (content: string) => {
-    const parts = content.split(/(```[\w]*\n[\s\S]*?\n```)/g);
-    return parts.map((part, index) => {
-      const codeBlockMatch = part.match(/```([\w]*)\n([\s\S]*?)\n```/);
-      if (codeBlockMatch) {
-        const language = codeBlockMatch[1] || undefined;
-        const code = codeBlockMatch[2];
-        return <CodeBlock key={index} code={code} language={language} />;
-      }
-      // Preserve newlines for regular text parts
-      return <span key={index} className="whitespace-pre-wrap">{part}</span>;
-    });
-  };
+  const renderedHtmlContent = React.useMemo(() => {
+    if (message.content && (isModel || isUser)) { // Only parse markdown for user and model messages with content
+      return markedInstance.parse(message.content) as string;
+    }
+    return message.content; // For system/error messages, or if no content, return as is.
+  }, [message.content, isModel, isUser]);
 
 
   if (isSystem) {
@@ -74,16 +62,31 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
           {isUser ? (
             <IconUserCircle className="w-8 h-8 text-gray-400" />
           ) : (
-            <IconSparkles className="w-8 h-8 text-teal-400" /> // Genie icon
+            <IconSparkles className="w-8 h-8 text-teal-400" />
           )}
         </div>
         <div className="flex-grow">
           <p className="text-sm font-semibold text-gray-200 mb-1">
             {isUser ? 'You' : 'Genie'}
           </p>
-          <div className="text-sm text-gray-300 leading-relaxed">
-             {renderContent(message.content)}
-          </div>
+          {isUser && message.image && (
+            <div className="mb-2 border border-gray-600 rounded-lg overflow-hidden max-w-xs">
+              <img 
+                src={message.image.base64Data} 
+                alt={message.image.fileName || 'Uploaded image'} 
+                className="max-w-full h-auto object-contain"
+              />
+            </div>
+          )}
+          {message.content && (
+            <div 
+              className="text-sm text-gray-300 leading-relaxed message-content"
+              dangerouslySetInnerHTML={{ __html: renderedHtmlContent }}
+            />
+          )}
+           {!message.content && isModel && ( // Handle case where model might send an empty content (e.g. image generation if that was supported by model role)
+             <div className="text-sm text-gray-400 italic">Genie is processing...</div>
+           )}
         </div>
       </div>
     </div>
