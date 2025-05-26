@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IconButton } from './IconButton';
-import { IconArrowUp, IconPaperClip, IconXMark, IconPhoto } from '../constants';
+import { IconArrowUp, IconPaperClip, IconXMark, IconPhoto, IconStop } from '../constants';
 
 interface ChatInputProps {
   onSendMessage: (
@@ -9,9 +9,10 @@ interface ChatInputProps {
   ) => void;
   isLoading: boolean;
   modelSupportsImage: boolean;
+  onStopGenerating?: () => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, modelSupportsImage }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, modelSupportsImage, onStopGenerating }) => {
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<{ base64Data: string; mimeType: string; fileName: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +62,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !isLoading) {
       event.preventDefault();
       handleSubmit();
     }
@@ -139,13 +140,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
             className="flex-grow p-3 bg-transparent text-gray-100 placeholder-gray-400 resize-none focus:outline-none overflow-y-hidden max-h-[200px]"
             disabled={isLoading}
           />
-          <IconButton
-            icon={<IconArrowUp className="w-5 h-5" />}
-            onClick={handleSubmit}
-            disabled={(!inputText.trim() && !selectedImage) || isLoading}
-            ariaLabel="Send message"
-            className={`m-1 ${(inputText.trim() || selectedImage) && !isLoading ? 'bg-teal-500 hover:bg-teal-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
-          />
+          {isLoading ? (
+            <IconButton
+              icon={<IconStop className="w-5 h-5" />}
+              onClick={onStopGenerating}
+              ariaLabel="Stop generating"
+              className="m-1 bg-red-500 hover:bg-red-600 text-white"
+              disabled={!onStopGenerating} // Should always be enabled if isLoading is true
+            />
+          ) : (
+            <IconButton
+              icon={<IconArrowUp className="w-5 h-5" />}
+              onClick={handleSubmit}
+              disabled={(!inputText.trim() && !selectedImage)}
+              ariaLabel="Send message"
+              className={`m-1 ${ (inputText.trim() || selectedImage) ? 'bg-teal-500 hover:bg-teal-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            />
+          )}
         </div>
       </div>
       <p className="text-xs text-gray-500 text-center mt-2 px-2">
