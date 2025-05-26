@@ -1,4 +1,3 @@
-
 import { Chat } from '@google/genai';
 
 export enum MessageRole {
@@ -13,6 +12,11 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  image?: { // For user-uploaded images
+    base64Data: string;
+    mimeType: string;
+    fileName?: string;
+  };
 }
 
 export interface ChatSession {
@@ -20,6 +24,14 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   createdAt: Date;
-  geminiChatInstance?: Chat; 
-  isPinned?: boolean; // Added for pinning functionality
+  modelId: string; // ID of the model used for this session
+  geminiChatInstance?: Chat;
+  isPinned?: boolean;
+}
+
+// Represents the structure of model configuration
+export interface ModelConfig {
+  id: string;
+  name: string;
+  supportsImage: boolean;
 }

@@ -1,17 +1,25 @@
 
-import React, { useEffect, useRef } from 'react';
-import { Message, MessageRole, ChatSession } from '../types';
+import React, { useEffect, useRef, useState } from 'react';
+import { Message, MessageRole, ChatSession, ModelConfig } from '../types';
 import { MessageItem } from './MessageItem';
 import { ChatInput } from './ChatInput';
 import { IconButton } from './IconButton';
-import { IconMenu, IconUserCircle, IconChevronDown, IconInfo, IconArrowPath, GENIE_VERSION, IconSparkles } from '../constants';
+import { 
+  IconMenu, IconUserCircle, IconChevronDown, IconArrowPath, 
+  IconSparkles, MODELS_CONFIG, getModelConfigById, IconPhoto
+} from '../constants';
 
 interface ChatViewProps {
   activeSession: ChatSession | null;
-  onSendMessage: (message: string, chatId: string) => void;
+  onSendMessage: (
+    chatId: string,
+    message: string,
+    image?: { base64Data: string; mimeType: string; fileName: string }
+  ) => void;
   isLoading: boolean;
   toggleSidebar: () => void;
-  onNewChat: () => void; // For the refresh button in header
+  onNewChat: () => void;
+  onModelChange: (sessionId: string, newModelId: string) => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -19,9 +27,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSendMessage,
   isLoading,
   toggleSidebar,
-  onNewChat
+  onNewChat,
+  onModelChange
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,19 +42,38 @@ export const ChatView: React.FC<ChatViewProps> = ({
     scrollToBottom();
   }, [activeSession?.messages, isLoading]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessageUI = (
+    text: string,
+    image?: { base64Data: string; mimeType: string; fileName: string }
+  ) => {
     if (activeSession) {
-      onSendMessage(message, activeSession.id);
+      onSendMessage(activeSession.id, text, image);
     } else {
-      // This case should ideally not happen if a session is always created/selected
       console.warn("Attempted to send message without an active session.");
-      // Potentially create a new chat here then send.
-      onNewChat(); // Create a new chat, then user has to resend. Or handle differently.
+      // Potentially create a new chat, then user has to resend, or handle differently.
+      // For now, if this happens, a new chat might be implicitly created by App.tsx logic if needed.
     }
   };
   
   const messages = activeSession?.messages ?? [];
+  const currentModelConfig = activeSession ? getModelConfigById(activeSession.modelId) : getModelConfigById(MODELS_CONFIG[0].id);
+
+  const handleModelSelect = (modelId: string) => {
+    if (activeSession && activeSession.modelId !== modelId) {
+      onModelChange(activeSession.id, modelId);
+    }
+    setIsModelDropdownOpen(false);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-800">
@@ -56,22 +86,41 @@ export const ChatView: React.FC<ChatViewProps> = ({
             ariaLabel="Toggle sidebar"
             className="lg:hidden mr-2"
           />
-          <button className="flex items-center text-lg font-semibold hover:bg-gray-700 p-1.5 rounded-md">
-            <IconSparkles className="w-5 h-5 mr-1.5 text-teal-400" />
-            {GENIE_VERSION.split(' ')[0]}
-            <IconChevronDown className="w-4 h-4 ml-1 text-gray-400" />
-          </button>
+          <div className="relative" ref={modelDropdownRef}>
+            <button 
+              onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+              className="flex items-center text-lg font-semibold hover:bg-gray-700 p-1.5 rounded-md"
+              aria-haspopup="true"
+              aria-expanded={isModelDropdownOpen}
+              aria-label={`Current model: ${currentModelConfig?.name}. Change model.`}
+            >
+              <IconSparkles className="w-5 h-5 mr-1.5 text-teal-400" />
+              {currentModelConfig?.name || "Select Model"}
+              <IconChevronDown className="w-4 h-4 ml-1 text-gray-400" />
+            </button>
+            {isModelDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-60 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-20 py-1">
+                {MODELS_CONFIG.map(model => (
+                  <button
+                    key={model.id}
+                    onClick={() => handleModelSelect(model.id)}
+                    className={`flex items-center w-full px-3 py-2 text-left text-sm hover:bg-gray-750
+                                ${activeSession?.modelId === model.id ? 'text-teal-400 font-semibold' : 'text-gray-200'}`}
+                  >
+                    {model.name}
+                    {model.supportsImage && <IconPhoto className="w-4 h-4 ml-auto text-gray-500" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center space-x-2">
-          {/* <div className="text-sm text-gray-400 flex items-center">
-            <span className="hidden sm:inline">Saved memory full</span> 
-            <IconInfo className="w-4 h-4 ml-1.5 text-gray-500 cursor-pointer" />
-          </div> */}
           <IconButton
             icon={<IconArrowPath className="w-5 h-5" />}
             onClick={onNewChat}
             ariaLabel="New Chat"
-            className="hidden sm:flex"
+            className="hidden sm:flex" // Keep it hidden on small screens if preferred
           />
           <IconUserCircle className="w-8 h-8 text-gray-400 cursor-pointer" />
         </div>
@@ -83,6 +132,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <IconSparkles className="w-16 h-16 mb-4 text-teal-500" />
             <h2 className="text-2xl font-semibold text-gray-200">What can I help with?</h2>
+            <p className="text-sm mt-1">Using model: {currentModelConfig?.name}</p>
           </div>
         ) : (
           <div className="pb-4">
@@ -90,7 +140,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <MessageItem key={msg.id} message={msg} />
             ))}
             {isLoading && messages[messages.length -1]?.role === MessageRole.USER && (
-              // Show a subtle loading indicator if the last message is user and we are waiting for model
               <div className="flex justify-center py-4">
                 <div className="animate-pulse flex space-x-2 items-center">
                   <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
@@ -105,7 +154,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </main>
 
       {/* Chat Input */}
-      <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <ChatInput 
+        onSendMessage={handleSendMessageUI} 
+        isLoading={isLoading} 
+        modelSupportsImage={currentModelConfig?.supportsImage ?? false}
+      />
     </div>
   );
 };
