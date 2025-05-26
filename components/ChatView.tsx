@@ -1,7 +1,6 @@
 
-
 import React, { useEffect, useRef, useState } from 'react';
-import { Message, MessageRole, ChatSession, ModelConfig } from '../types';
+import { Message, MessageRole, ChatSession } from '../types';
 import { MessageItem } from './MessageItem';
 import { ChatInput } from './ChatInput';
 import { IconButton } from './IconButton';
@@ -13,7 +12,7 @@ import {
 interface ChatViewProps {
   activeSession: ChatSession | null;
   onSendMessage: (
-    chatId: string | null, // Allow null for starting new chat
+    chatId: string | null,
     message: string,
     image?: { base64Data: string; mimeType: string; fileName: string }
   ) => void;
@@ -21,7 +20,9 @@ interface ChatViewProps {
   toggleSidebar: () => void;
   onNewChat: () => void;
   onModelChange: (sessionId: string, newModelId: string) => void;
-  onStopGenerating?: () => void; // New prop
+  onStopGenerating?: () => void;
+  defaultModelForNewChat: string;
+  onChangeDefaultModel: (newModelId: string) => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -31,19 +32,86 @@ export const ChatView: React.FC<ChatViewProps> = ({
   toggleSidebar,
   onNewChat,
   onModelChange,
-  onStopGenerating, // Destructure new prop
+  onStopGenerating,
+  defaultModelForNewChat,
+  onChangeDefaultModel,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLElement>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
+  
+  const userHasScrolledUpRef = useRef(false);
+  const lastActiveSessionIdRef = useRef<string | null | undefined>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Effect to handle chat session changes (reset scroll state, initial scroll)
   useEffect(() => {
-    scrollToBottom();
+    const isNewSessionOrMessagesLoaded = activeSession?.id !== lastActiveSessionIdRef.current || 
+                                        (activeSession?.id === lastActiveSessionIdRef.current && activeSession?.messages?.length > 0 && scrollContainerRef.current?.scrollTop === 0);
+
+    if (isNewSessionOrMessagesLoaded) {
+        userHasScrolledUpRef.current = false;
+        lastActiveSessionIdRef.current = activeSession?.id;
+        
+        setTimeout(() => { 
+            if (scrollContainerRef.current) {
+                if (activeSession?.messages && activeSession.messages.length > 0) {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                } else {
+                    scrollContainerRef.current.scrollTop = 0; 
+                }
+            }
+        }, 0);
+    }
+  }, [activeSession?.id, activeSession?.messages?.length]);
+
+
+  // Scroll handler attachment
+  useEffect(() => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const handleScroll = () => {
+          const { scrollTop, scrollHeight, clientHeight } = container;
+          if (scrollHeight - scrollTop - clientHeight > 150) { 
+              userHasScrolledUpRef.current = true;
+          } else if (scrollHeight - scrollTop - clientHeight < 10) {
+              userHasScrolledUpRef.current = false;
+          }
+      };
+
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+  }, []); 
+
+  // Effect for auto-scrolling based on messages and loading state
+  useEffect(() => {
+    if (!activeSession?.messages || activeSession.messages.length === 0) {
+        return;
+    }
+
+    const messages = activeSession.messages;
+    const lastMessage = messages[messages.length - 1];
+
+    const userMessageIsLatestAndProcessing =
+        lastMessage.role === MessageRole.USER && isLoading;
+    
+    const modelPlaceholderIsLatestAndProcessing =
+        lastMessage.role === MessageRole.MODEL &&
+        lastMessage.content === "" && 
+        isLoading &&
+        messages.length > 1 && 
+        messages[messages.length - 2]?.role === MessageRole.USER;
+
+    if (userMessageIsLatestAndProcessing || modelPlaceholderIsLatestAndProcessing) {
+        userHasScrolledUpRef.current = false;
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (!userHasScrolledUpRef.current) {
+        const behavior = isLoading ? 'smooth' : 'auto'; 
+        messagesEndRef.current?.scrollIntoView({ behavior });
+    }
   }, [activeSession?.messages, isLoading]);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,29 +127,31 @@ export const ChatView: React.FC<ChatViewProps> = ({
     text: string,
     image?: { base64Data: string; mimeType: string; fileName: string }
   ) => {
-    // Pass activeSession?.id (which can be null) to onSendMessage
+    userHasScrolledUpRef.current = false; 
     onSendMessage(activeSession?.id || null, text, image);
   };
   
   const messages = activeSession?.messages ?? [];
-  const currentModelConfig = activeSession ? getModelConfigById(activeSession.modelId) : getModelConfigById(DEFAULT_MODEL_ID);
+  const currentModelIdToUse = activeSession ? activeSession.modelId : defaultModelForNewChat;
+  const currentModelConfig = getModelConfigById(currentModelIdToUse);
 
   const handleModelSelect = (modelId: string) => {
-    if (activeSession && activeSession.modelId !== modelId) {
-      onModelChange(activeSession.id, modelId);
-    } else if (!activeSession) {
-      // If no active session, user might want to set a model for the *next* new chat.
-      // This requires more complex state management (e.g., a `defaultNextModelId` state).
-      // For now, model selection primarily works for an active chat.
-      // Or, we could trigger a new chat with this model selected.
-      // console.log("No active session to change model for. Model selection will apply to the next new chat if implemented.");
+    if (activeSession) {
+      // If there's an active session, change its model
+      if (activeSession.modelId !== modelId) {
+        onModelChange(activeSession.id, modelId);
+      }
+    } else {
+      // No active session, change the default model for new chats
+      if (defaultModelForNewChat !== modelId) {
+          onChangeDefaultModel(modelId);
+      }
     }
     setIsModelDropdownOpen(false);
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-800">
-      {/* Header */}
       <header className="flex items-center justify-between h-16 px-4 border-b border-gray-700 bg-gray-800 text-gray-100 flex-shrink-0">
         <div className="flex items-center">
           <IconButton
@@ -96,8 +166,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
               className="flex items-center text-lg font-semibold hover:bg-gray-700 p-1.5 rounded-md"
               aria-haspopup="true"
               aria-expanded={isModelDropdownOpen}
-              aria-label={`Current model: ${currentModelConfig?.name}. Change model.`}
-              disabled={!activeSession && MODELS_CONFIG.length <=1} // Disable if no active session and only one model (or no models)
+              aria-label={`Current model: ${currentModelConfig?.name || "Select Model"}. Change model.`}
+              disabled={MODELS_CONFIG.length <= 1}
             >
               <IconSparkles className="w-5 h-5 mr-1.5 text-teal-400" />
               {currentModelConfig?.name || "Select Model"}
@@ -110,9 +180,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     key={model.id}
                     onClick={() => handleModelSelect(model.id)}
                     className={`flex items-center w-full px-3 py-2 text-left text-sm hover:bg-gray-750
-                                ${activeSession?.modelId === model.id ? 'text-teal-400 font-semibold' : 'text-gray-200'}`}
-                    // Disable if trying to select for non-existent session, unless we implement "select for next chat"
-                     disabled={!activeSession && model.id !== currentModelConfig?.id}
+                                ${currentModelIdToUse === model.id ? 'text-teal-400 font-semibold' : 'text-gray-200'}`}
                   >
                     {model.name}
                     {model.supportsImage && <IconPhoto className="w-4 h-4 ml-auto text-gray-500" />}
@@ -125,7 +193,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
         <div className="flex items-center space-x-2">
           <IconButton
             icon={<IconArrowPath className="w-5 h-5" />}
-            onClick={onNewChat}
+            onClick={() => {
+              userHasScrolledUpRef.current = false; 
+              onNewChat();
+            }}
             ariaLabel="New Chat"
             className="hidden sm:flex" 
           />
@@ -133,20 +204,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       </header>
 
-      {/* Message List */}
-      <main className="flex-1 overflow-y-auto">
+      <main ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         {!activeSession && !isLoading ? (
            <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <IconSparkles className="w-16 h-16 mb-4 text-teal-500" />
             <h2 className="text-2xl font-semibold text-gray-200">How can I help you today?</h2>
             <p className="text-sm mt-1">Start by typing a message below or <button onClick={onNewChat} className="text-teal-400 hover:underline">start a new chat</button>.</p>
-             <p className="text-sm mt-1">Using model: {getModelConfigById(DEFAULT_MODEL_ID)?.name}</p>
+             <p className="text-sm mt-1">Using model: {currentModelConfig?.name || 'Unknown Model'}</p>
           </div>
         ) : messages.length === 0 && !isLoading && activeSession ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <IconSparkles className="w-16 h-16 mb-4 text-teal-500" />
             <h2 className="text-2xl font-semibold text-gray-200">What can I help with?</h2>
-            <p className="text-sm mt-1">Using model: {currentModelConfig?.name}</p>
+            <p className="text-sm mt-1">Using model: {currentModelConfig?.name || 'Unknown Model'}</p>
           </div>
         ) : (
           <div className="pb-4">
@@ -167,12 +237,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
       </main>
 
-      {/* Chat Input */}
       <ChatInput 
         onSendMessage={handleSendMessageUI} 
         isLoading={isLoading} 
         modelSupportsImage={currentModelConfig?.supportsImage ?? false}
-        onStopGenerating={onStopGenerating} // Pass down the handler
+        onStopGenerating={onStopGenerating}
       />
     </div>
   );

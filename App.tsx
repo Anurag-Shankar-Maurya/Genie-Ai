@@ -11,11 +11,18 @@ const App: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultModelForNewChat, setDefaultModelForNewChat] = useState<string>(DEFAULT_MODEL_ID);
   const stopGenerationRef = useRef(false);
 
   // Load sessions from localStorage
   useEffect(() => {
     const storedSessions = localStorage.getItem('genieChatSessions');
+    const storedDefaultModel = localStorage.getItem('genieDefaultModel');
+
+    if (storedDefaultModel && MODELS_CONFIG.find(m => m.id === storedDefaultModel)) {
+      setDefaultModelForNewChat(storedDefaultModel);
+    }
+
     if (storedSessions) {
       const parsedSessions: ChatSession[] = JSON.parse(storedSessions).map((s: any) => ({
         ...s,
@@ -26,7 +33,7 @@ const App: React.FC = () => {
             image: m.image ? { ...m.image } : undefined 
         })),
         isPinned: s.isPinned || false,
-        modelId: s.modelId || DEFAULT_MODEL_ID,
+        modelId: s.modelId || defaultModelForNewChat, // Use potentially updated default
       }));
       setChatSessions(parsedSessions);
       if (parsedSessions.length > 0) {
@@ -37,25 +44,30 @@ const App: React.FC = () => {
         });
         setActiveChatId(sortedByDate[0].id);
       } else {
-        setActiveChatId(null); // No sessions, so no active chat
+        setActiveChatId(null); 
       }
     } else {
-      setActiveChatId(null); // No stored sessions, no active chat
+      setActiveChatId(null); 
     }
-  }, []);
+  }, []); // Removed defaultModelForNewChat from deps to avoid race condition on init
 
   // Save sessions to localStorage
   useEffect(() => {
     if (chatSessions.length > 0) {
       localStorage.setItem('genieChatSessions', JSON.stringify(chatSessions));
     } else {
-      // If all chats are deleted, remove the item from localStorage
       const storedSessions = localStorage.getItem('genieChatSessions');
-      if (storedSessions) { // only remove if it exists
+      if (storedSessions) { 
         localStorage.removeItem('genieChatSessions');
       }
     }
   }, [chatSessions]);
+
+  // Save default model to localStorage
+  useEffect(() => {
+    localStorage.setItem('genieDefaultModel', defaultModelForNewChat);
+  }, [defaultModelForNewChat]);
+
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -96,8 +108,6 @@ const App: React.FC = () => {
 
  const getOrCreateGeminiChatInstance = useCallback((session: ChatSession): Chat => {
     if (!session) {
-        // This case should ideally be handled before calling, by ensuring a session exists.
-        // If it occurs, it's an unexpected state.
         console.error("Session object is undefined for Gemini instance. Cannot proceed.");
         throw new Error("Session object is undefined for Gemini instance.");
     }
@@ -118,7 +128,7 @@ const App: React.FC = () => {
             },
           });
         }
-        if (m.content || (m.role === MessageRole.MODEL && parts.length === 0) ) { // Ensure model message has at least empty text part if no image
+        if (m.content || (m.role === MessageRole.MODEL && parts.length === 0) ) { 
           parts.push({ text: m.content || "" });
         }
         
@@ -142,21 +152,20 @@ const App: React.FC = () => {
 
   const startNewChat = useCallback((): ChatSession => {
     const newChatId = generateId();
-    const currentModelIdForNewChat = DEFAULT_MODEL_ID;
-
+    
     const newSession: ChatSession = {
       id: newChatId,
       title: `New Chat`,
       messages: [],
       createdAt: new Date(),
-      modelId: currentModelIdForNewChat,
+      modelId: defaultModelForNewChat, // Use the current default model for new chats
       isPinned: false,
     };
     setChatSessions(prevSessions => [newSession, ...prevSessions]);
     setActiveChatId(newChatId);
     if (isSidebarOpen) setIsSidebarOpen(false);
     return newSession;
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, defaultModelForNewChat]);
 
 
   const selectChatSession = useCallback((id: string) => {
@@ -184,7 +193,7 @@ const App: React.FC = () => {
               });
               setActiveChatId(sortedRemaining[0].id);
           } else {
-              setActiveChatId(null); // No chats left, set active to null
+              setActiveChatId(null); 
           }
         }
         return updatedSessions;
@@ -205,16 +214,21 @@ const App: React.FC = () => {
   const handleModelChangeForSession = useCallback((sessionId: string, newModelId: string) => {
     setChatSessions(prevSessions =>
       prevSessions.map(s =>
-        s.id === sessionId && s.modelId !== newModelId // Only update if model actually changed
+        s.id === sessionId && s.modelId !== newModelId 
           ? { ...s, modelId: newModelId, geminiChatInstance: undefined } 
           : s
       )
     );
   }, []);
 
+  const handleChangeDefaultModel = useCallback((newModelId: string) => {
+    if (MODELS_CONFIG.find(m => m.id === newModelId)) {
+        setDefaultModelForNewChat(newModelId);
+    }
+  }, []);
+
   const handleStopGenerating = useCallback(() => {
     stopGenerationRef.current = true;
-    // isLoading will be set to false in the finally block of handleSendMessage
   }, []);
 
   const handleSendMessage = useCallback(async (
@@ -226,17 +240,18 @@ const App: React.FC = () => {
     let currentChatIdToUse: string;
 
     if (!chatIdFromView) {
-        const newSession = startNewChat(); // Creates session, adds to state, sets active
+        const newSession = startNewChat(); 
         sessionForMessage = newSession;
         currentChatIdToUse = newSession.id;
     } else {
         currentChatIdToUse = chatIdFromView;
+        // Fetch the latest session state from chatSessions to ensure modelId is current
         sessionForMessage = chatSessions.find(s => s.id === currentChatIdToUse);
     }
     
     if (!sessionForMessage) {
         console.error("Error: Could not find or create a session to send the message to.");
-         addMessageToSession(chatIdFromView || "error-temp-id" , { // Fallback ID if needed
+         addMessageToSession(chatIdFromView || "error-temp-id" , {
             id: generateId(),
             role: MessageRole.ERROR,
             content: `Critical error: Session ${chatIdFromView} not found. Please try starting a new chat.`,
@@ -260,7 +275,7 @@ const App: React.FC = () => {
     if (!text.trim() && !image) return; 
 
     setIsLoading(true);
-    stopGenerationRef.current = false; // Reset stop flag
+    stopGenerationRef.current = false; 
 
     const userMessage: Message = {
       id: generateId(),
@@ -271,7 +286,6 @@ const App: React.FC = () => {
     };
     addMessageToSession(currentChatIdToUse, userMessage);
     
-    // Update sessionForMessage with the new user message for history creation
     sessionForMessage = {...sessionForMessage, messages: [...sessionForMessage.messages, userMessage]};
 
 
@@ -285,7 +299,7 @@ const App: React.FC = () => {
     addMessageToSession(currentChatIdToUse, placeholderModelMessage);
 
     try {
-      const currentChatInstance = getOrCreateGeminiChatInstance(sessionForMessage); // Pass the session object
+      const currentChatInstance = getOrCreateGeminiChatInstance(sessionForMessage); 
       
       const messageParts: Part[] = [];
       if (image) {
@@ -319,8 +333,6 @@ const App: React.FC = () => {
         }
       }
       
-      // Auto-title generation logic
-      // Re-fetch the session from state to ensure we have the latest message list for title conditions
       const latestSessionState = chatSessions.find(s => s.id === currentChatIdToUse);
       if (latestSessionState && latestSessionState.title === "New Chat" && 
           latestSessionState.messages.filter(m => m.role === MessageRole.MODEL && m.content.trim() !== "").length === 1) {
@@ -348,10 +360,10 @@ const App: React.FC = () => {
       updateMessageInSession(currentChatIdToUse, modelMessageId, `Sorry, I encountered an error: ${errorMessageContent}`, MessageRole.ERROR);
     } finally {
       setIsLoading(false);
-      stopGenerationRef.current = false; // Ensure it's reset
+      stopGenerationRef.current = false; 
     }
   }, [
-      chatSessions, // To find existing sessions
+      chatSessions, 
       startNewChat, 
       getOrCreateGeminiChatInstance, 
       addMessageToSession, 
@@ -383,6 +395,8 @@ const App: React.FC = () => {
             onNewChat={startNewChat}
             onModelChange={handleModelChangeForSession}
             onStopGenerating={handleStopGenerating}
+            defaultModelForNewChat={defaultModelForNewChat}
+            onChangeDefaultModel={handleChangeDefaultModel}
         />
       </div>
     </div>
