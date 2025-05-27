@@ -160,7 +160,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         </div>
       </div>
       <p className="text-xs text-gray-500 text-center mt-2 px-2">
-        Genie can make mistakes. Consider checking important information.
+        Developed by Anurag Shankar Maurya. Genie can make mistakes.
       </p>
     </div>
   );
