@@ -112,15 +112,20 @@ export const generateId = (): string => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-export const DEFAULT_MODEL_ID = 'gemini-2.5-flash-preview-04-17';
+export const DEFAULT_MODEL_ID = 'gemini-3-1b-it';
 
 export const MODELS_CONFIG: ModelConfig[] = [
-  { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini Flash', supportsImage: false },
   { id: 'gemma-3-1b-it', name: 'Gemma 3 1B', supportsImage: false },
   { id: 'gemma-3-4b-it', name: 'Gemma 3 4B', supportsImage: false },
   { id: 'gemma-3-12b-it', name: 'Gemma 3 12B', supportsImage: false },
+  { id: 'gemma-3n-e4b-it', name: 'Gemma 3n E4B', supportsImage: false }, 
   { id: 'gemma-3-27b-it', name: 'Gemma 3 27B', supportsImage: true },
-  { id: 'gemma-3n-e4b-it', name: 'Gemma 3n E4B', supportsImage: false }, // Assuming only 27B supports images as per prompt
+  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true }, 
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', supportsImage: true },
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', supportsImage: true },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', supportsImage: true },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', supportsImage: true },
+  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', supportsImage: true },
 ];
 
 export const getModelConfigById = (modelId: string): ModelConfig | undefined => {
