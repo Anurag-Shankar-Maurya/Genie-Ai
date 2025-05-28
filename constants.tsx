@@ -125,7 +125,8 @@ export const MODELS_CONFIG: ModelConfig[] = [
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', supportsImage: true },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', supportsImage: true },
   { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', supportsImage: true },
-  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true }
+  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true },
+  { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash', supportsImage: true},
 ];
 
 export const getModelConfigById = (modelId: string): ModelConfig | undefined => {
