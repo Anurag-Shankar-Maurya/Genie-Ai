@@ -112,7 +112,7 @@ export const generateId = (): string => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-export const DEFAULT_MODEL_ID = 'gemini-3-1b-it';
+export const DEFAULT_MODEL_ID = 'gemma-3-1b-it';
 
 export const MODELS_CONFIG: ModelConfig[] = [
   { id: 'gemma-3-1b-it', name: 'Gemma 3 1B', supportsImage: false },
