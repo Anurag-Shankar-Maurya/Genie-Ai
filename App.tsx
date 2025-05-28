@@ -16,24 +16,30 @@ const App: React.FC = () => {
 
   // Load sessions from localStorage
   useEffect(() => {
-    const storedSessions = localStorage.getItem('genieChatSessions');
-    const storedDefaultModel = localStorage.getItem('genieDefaultModel');
+    const storedSessionsRaw = localStorage.getItem('genieChatSessions');
+    const storedDefaultModelId = localStorage.getItem('genieDefaultModel');
 
-    if (storedDefaultModel && MODELS_CONFIG.find(m => m.id === storedDefaultModel)) {
-      setDefaultModelForNewChat(storedDefaultModel);
+    let currentDefaultModel = DEFAULT_MODEL_ID; // Start with the hardcoded default
+
+    if (storedDefaultModelId && MODELS_CONFIG.find(m => m.id === storedDefaultModelId)) {
+      currentDefaultModel = storedDefaultModelId; // Use stored if valid
+      setDefaultModelForNewChat(storedDefaultModelId); // Update React state for future new chats
     }
+    // If not valid or not found, defaultModelForNewChat state remains DEFAULT_MODEL_ID (from useState)
+    // and currentDefaultModel is also DEFAULT_MODEL_ID.
 
-    if (storedSessions) {
-      const parsedSessions: ChatSession[] = JSON.parse(storedSessions).map((s: any) => ({
+    if (storedSessionsRaw) {
+      const parsedSessions: ChatSession[] = JSON.parse(storedSessionsRaw).map((s: any) => ({
         ...s,
         createdAt: new Date(s.createdAt),
         messages: s.messages.map((m: Message) => ({ 
             ...m, 
             timestamp: new Date(m.timestamp),
-            image: m.image ? { ...m.image } : undefined 
+            image: m.image ? { ...m.image } : undefined
         })),
-        isPinned: s.isPinned || false,
-        modelId: s.modelId || defaultModelForNewChat, // Use potentially updated default
+        isPinned: s.isPinned || false, // Ensure isPinned exists
+        modelId: s.modelId || currentDefaultModel, // Use the resolved current default model
+        geminiChatInstance: undefined, // Explicitly discard any stored instance
       }));
       setChatSessions(parsedSessions);
       if (parsedSessions.length > 0) {
@@ -47,7 +53,7 @@ const App: React.FC = () => {
         setActiveChatId(null); 
       }
     } else {
-      setActiveChatId(null); 
+      setActiveChatId(null);
     }
   }, []); // Removed defaultModelForNewChat from deps to avoid race condition on init
 
@@ -112,33 +118,37 @@ const App: React.FC = () => {
         throw new Error("Session object is undefined for Gemini instance.");
     }
 
-    if (session.geminiChatInstance) {
+    // Check if it's a valid Chat instance, not just any truthy value (like a plain object from bad state)
+    if (session.geminiChatInstance && typeof session.geminiChatInstance.sendMessageStream === 'function') {
       return session.geminiChatInstance;
     }
 
     const geminiHistory: Content[] = session.messages
-      .filter(m => m.role === MessageRole.USER || m.role === MessageRole.MODEL)
-      .map(m => {
-        const parts: Part[] = [];
-        if (m.role === MessageRole.USER && m.image) {
-          parts.push({
+      .filter(msg => msg.role === MessageRole.USER || msg.role === MessageRole.MODEL)
+      .map(msg => {
+        const currentMessageParts: Part[] = [];
+        if (msg.role === MessageRole.USER && msg.image) {
+          currentMessageParts.push({
             inlineData: {
-              mimeType: m.image.mimeType,
-              data: m.image.base64Data.split(',')[1], 
+              mimeType: msg.image.mimeType,
+              data: msg.image.base64Data.split(',')[1],
             },
           });
         }
-        if (m.content || (m.role === MessageRole.MODEL && parts.length === 0) ) { 
-          parts.push({ text: m.content || "" });
+        // Add text part if content is present, or if it's a user message with an image (Gemini likes an empty text part then),
+        // or if it's a model message (which always has text content, even if empty initially).
+        if (msg.content || (msg.role === MessageRole.USER && msg.image) || msg.role === MessageRole.MODEL) {
+          currentMessageParts.push({ text: msg.content || "" });
         }
-        
+
         return {
-          role: m.role === MessageRole.USER ? 'user' : 'model',
-          parts: parts.length > 0 ? parts : [{text: ''}], 
+          role: msg.role === MessageRole.USER ? 'user' : 'model',
+          parts: currentMessageParts,
         };
-      }).filter(content => content.parts.length > 0 && (content.parts[0].text !== '' || content.parts[0].inlineData));
-
-
+      })
+      // Filter out messages that ended up with no parts (e.g. an empty user message without image)
+      .filter(content => content.parts.length > 0);
+      
     const newChatInstance = geminiService.createChatSession(session.modelId, geminiHistory);
     
     setChatSessions(prevSessions => 
@@ -301,24 +311,25 @@ const App: React.FC = () => {
     try {
       const currentChatInstance = getOrCreateGeminiChatInstance(sessionForMessage); 
       
-      const messageParts: Part[] = [];
+      const messagePartsToSend: Part[] = [];
       if (image) {
-        messageParts.push({
+        messagePartsToSend.push({
           inlineData: {
             mimeType: image.mimeType,
             data: image.base64Data.split(',')[1], 
           },
         });
+        // If there's an image, always send a text part, even if it's empty.
+        messagePartsToSend.push({ text: text.trim() || "" });
+      } else if (text.trim()) {
+        // Only text, no image
+        messagePartsToSend.push({ text: text.trim() });
       }
-      if (text.trim()) {
-        messageParts.push({ text: text.trim() });
-      }
-      
-      if (messageParts.length === 0 && image) {
-        messageParts.push({ text: "" }); 
-      }
+      // No need to check messagePartsToSend.length === 0 here because
+      // the `if (!text.trim() && !image) return;` at the start of handleSendMessage covers it.
 
-      const stream = await geminiService.sendMessageStream(currentChatInstance, messageParts);
+
+      const stream = await geminiService.sendMessageStream(currentChatInstance, messagePartsToSend);
       
       let fullResponse = "";
       for await (const chunk of stream) {
