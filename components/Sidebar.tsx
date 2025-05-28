@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatSession } from '../types';
 import {
-  IconPencilSquare, IconChatBubble, IconUserCircle, IconSparkles, IconXMark,
+  IconPencilSquare, IconChatBubble, IconUserCircle, IconGenie, IconXMark,
   USER_NAME, GENIE_VERSION_NAME, IconMenu, IconEllipsisVertical, IconPin, IconTrash, IconPencilAlt
 } from '../constants';
 import { IconButton } from './IconButton';
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-800">
           <div className="flex items-center">
-            <IconSparkles className="h-7 w-7 text-teal-400" />
+            <IconGenie className="h-7 w-7 text-teal-400" />
             <span className="ml-2 text-lg font-semibold text-white">{GENIE_VERSION_NAME}</span>
           </div>
           <IconButton

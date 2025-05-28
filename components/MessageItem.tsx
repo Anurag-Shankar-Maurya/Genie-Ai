@@ -2,7 +2,7 @@
 import React from 'react';
 import { marked, Marked } from 'marked';
 import { Message, MessageRole } from '../types';
-import { IconUserCircle, IconSparkles } from '../constants';
+import { IconUserCircle, IconGenie } from '../constants';
 
 // Configure marked
 const markedInstance = new Marked({
@@ -45,7 +45,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
     return (
        <div className="flex py-4 px-2 md:px-4 max-w-3xl mx-auto">
         <div className="mr-3 flex-shrink-0">
-          <IconSparkles className="w-8 h-8 text-red-500" />
+          <IconGenie className="w-8 h-8 text-red-500" />
         </div>
         <div className="flex-grow bg-red-900 bg-opacity-30 p-3 rounded-lg">
           <p className="text-sm text-red-400 font-semibold">Error</p>
@@ -62,7 +62,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
           {isUser ? (
             <IconUserCircle className="w-8 h-8 text-gray-400" />
           ) : (
-            <IconSparkles className="w-8 h-8 text-teal-400" />
+            <IconGenie className="w-8 h-8 text-teal-400" />
           )}
         </div>
         <div className="flex-grow">

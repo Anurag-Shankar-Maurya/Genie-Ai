@@ -6,7 +6,8 @@ import { ChatInput } from './ChatInput';
 import { IconButton } from './IconButton';
 import { 
   IconMenu, IconUserCircle, IconChevronDown, IconArrowPath, 
-  IconSparkles, MODELS_CONFIG, getModelConfigById, IconPhoto, DEFAULT_MODEL_ID
+  IconGenie, MODELS_CONFIG, getModelConfigById, IconPhoto, DEFAULT_MODEL_ID,
+  IconPencilSquare
 } from '../constants';
 
 interface ChatViewProps {
@@ -169,7 +170,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               aria-label={`Current model: ${currentModelConfig?.name || "Select Model"}. Change model.`}
               disabled={MODELS_CONFIG.length <= 1}
             >
-              <IconSparkles className="w-5 h-5 mr-1.5 text-teal-400" />
+              <IconGenie className="w-5 h-5 mr-1.5 text-teal-400" />
               {currentModelConfig?.name || "Select Model"}
               <IconChevronDown className="w-4 h-4 ml-1 text-gray-400" />
             </button>
@@ -192,7 +193,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
         <div className="flex items-center space-x-2">
           <IconButton
-            icon={<IconArrowPath className="w-5 h-5" />}
+            icon={<IconPencilSquare className="w-5 h-5" />}
             onClick={() => {
               userHasScrolledUpRef.current = false; 
               onNewChat();
@@ -207,14 +208,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <main ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         {!activeSession && !isLoading ? (
            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <IconSparkles className="w-16 h-16 mb-4 text-teal-500" />
+            <IconGenie className="w-16 h-16 mb-4 text-teal-500" />
             <h2 className="text-2xl font-semibold text-gray-200">How can I help you today?</h2>
             <p className="text-sm mt-1">Start by typing a message below or <button onClick={onNewChat} className="text-teal-400 hover:underline">start a new chat</button>.</p>
              <p className="text-sm mt-1">Using model: {currentModelConfig?.name || 'Unknown Model'}</p>
           </div>
         ) : messages.length === 0 && !isLoading && activeSession ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <IconSparkles className="w-16 h-16 mb-4 text-teal-500" />
+            <IconGenie className="w-16 h-16 mb-4 text-teal-500" />
             <h2 className="text-2xl font-semibold text-gray-200">What can I help with?</h2>
             <p className="text-sm mt-1">Using model: {currentModelConfig?.name || 'Unknown Model'}</p>
           </div>

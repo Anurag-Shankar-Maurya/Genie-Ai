@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IconButton } from './IconButton';
-import { IconArrowUp, IconPaperClip, IconXMark, IconPhoto, IconStop } from '../constants';
+import { IconArrowUp, IconXMark, IconPhoto, IconStop } from '../constants';
 
 interface ChatInputProps {
   onSendMessage: (
@@ -114,7 +114,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           {modelSupportsImage && (
             <>
               <IconButton
-                icon={<IconPaperClip className="w-5 h-5" />}
+                icon={<IconPhoto className="w-5 h-5" />}
                 onClick={() => fileInputRef.current?.click()}
                 ariaLabel="Upload image"
                 className="m-1 text-gray-400 hover:text-teal-400"
