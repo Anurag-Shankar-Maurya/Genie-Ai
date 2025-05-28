@@ -120,13 +120,13 @@ export const MODELS_CONFIG: ModelConfig[] = [
   { id: 'gemma-3-12b-it', name: 'Gemma 3 12B', supportsImage: false },
   { id: 'gemma-3n-e4b-it', name: 'Gemma 3n E4B', supportsImage: false },
   { id: 'gemma-3-27b-it', name: 'Gemma 3 27B', supportsImage: true },
+  // { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', supportsImage: true },
+  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', supportsImage: true },
+  // { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', supportsImage: true },
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', supportsImage: true },
   { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', supportsImage: true },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', supportsImage: true },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', supportsImage: true },
-  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', supportsImage: true },
-  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true },
-  { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash', supportsImage: true},
+  { id: 'learnlm-2.0-flash-experimental', name: '* LearnLM 2.0 Flash', supportsImage: true },
+  // { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash', supportsImage: true},
 ];
 
 export const getModelConfigById = (modelId: string): ModelConfig | undefined => {
