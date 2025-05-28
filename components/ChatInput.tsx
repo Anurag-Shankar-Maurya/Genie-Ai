@@ -29,8 +29,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         alert('Unsupported file type. Please upload JPG, PNG, or WebP images.');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('File size exceeds 5MB limit.');
+      if (file.size > 20 * 1024 * 1024) { // 20MB limit
+        alert('File size exceeds 20MB limit.');
         return;
       }
       const reader = new FileReader();
@@ -99,6 +99,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
             <img 
               src={selectedImage.base64Data} 
               alt={selectedImage.fileName} 
+              height={50}
+              width={50}
               className="max-h-32 max-w-full rounded object-contain" 
             />
             <IconButton
@@ -110,9 +112,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
              <p className="text-xs text-gray-400 mt-1 truncate">{selectedImage.fileName}</p>
           </div>
         )}
-        <p className="text-xs text-gray-500 text-center mt-2 px-2">
+        {/* <p className="text-xs text-gray-500 text-center mt-2 px-2">
         Developed by Anurag Shankar Maurya. Genie can make mistakes.
-      </p>
+      </p> */}
         <div className="relative flex items-end p-1 bg-gray-700 rounded-xl shadow-md">
           {modelSupportsImage && (
             <>

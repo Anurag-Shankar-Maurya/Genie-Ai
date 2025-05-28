@@ -29,9 +29,9 @@ export const IconUserCircle = ({ className = "w-6 h-6" }: { className?: string }
 
 export const IconArrowUp = ({ className = "w-6 h-6" }: { className?: string }) => (
   // <img src="/icons/icon_arrow_up.svg" alt="Icon Arrow Up" className={className} />
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+  </svg>
 );
 
 export const IconGenie = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -118,14 +118,14 @@ export const MODELS_CONFIG: ModelConfig[] = [
   { id: 'gemma-3-1b-it', name: 'Gemma 3 1B', supportsImage: false },
   { id: 'gemma-3-4b-it', name: 'Gemma 3 4B', supportsImage: false },
   { id: 'gemma-3-12b-it', name: 'Gemma 3 12B', supportsImage: false },
-  { id: 'gemma-3n-e4b-it', name: 'Gemma 3n E4B', supportsImage: false }, 
+  { id: 'gemma-3n-e4b-it', name: 'Gemma 3n E4B', supportsImage: false },
   { id: 'gemma-3-27b-it', name: 'Gemma 3 27B', supportsImage: true },
-  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true }, 
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', supportsImage: true },
   { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', supportsImage: true },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', supportsImage: true },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', supportsImage: true },
   { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', supportsImage: true },
+  { id: 'learnlm-2.0-flash-experimental', name: 'LearnLM 2.0 Flash', supportsImage: true }
 ];
 
 export const getModelConfigById = (modelId: string): ModelConfig | undefined => {
