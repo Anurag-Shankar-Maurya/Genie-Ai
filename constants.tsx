@@ -35,7 +35,8 @@ export const IconArrowUp = ({ className = "w-6 h-6" }: { className?: string }) =
 );
 
 export const IconGenie = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <img src="/icons/icon_genie.svg" alt="Icon Sparkles" className={className} />
+  // <img src="/icons/icon_genie.svg" alt="Icon Sparkles" className={className} />
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className={className} viewBox="21.010669708251953 5 57.99302291870117 90.0000228881836" x="0px" y="0px"><title>Artboard 13</title><g data-name="Слой 3"><path d="M67.43,71.76a5.58,5.58,0,0,1-5.6-5.6V60.81h9.54a4.76,4.76,0,0,0,4.11-7.16L66.59,38.49A4.16,4.16,0,0,0,63,36.43H25.77a4.76,4.76,0,0,0-4.11,7.16l8.87,15.16a4.16,4.16,0,0,0,3.59,2.06H50.5l-13.22,3v8l-.09.1A16.66,16.66,0,0,0,53.76,88.67H64a3.39,3.39,0,0,1,3.58,3.18V95A11.4,11.4,0,0,0,79,83.31,11.61,11.61,0,0,0,67.43,71.76Z"></path><path d="M41.3,29.85a3.46,3.46,0,0,0,3.43,3H54.92a2.7,2.7,0,0,0,2.7-2.7V27.81H60.3l-2.68-5.62v-2a5.45,5.45,0,0,0-4-5.27,5.29,5.29,0,0,0,.18-1.42l0,0V5H52.23V9.8A5.35,5.35,0,0,0,46.5,8.53l-7.73,2.95A9.51,9.51,0,0,0,41.3,29.85Z"></path></g></svg>
 );
 
 export const IconChatBubble = ({ className = "w-5 h-5" }: { className?: string }) => (
