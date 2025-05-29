@@ -5,7 +5,7 @@ import { MessageItem } from './MessageItem';
 import { ChatInput } from './ChatInput';
 import { IconButton } from './IconButton';
 import { 
-  IconMenu, IconUserCircle, IconChevronDown, IconArrowPath, 
+  IconMenu, IconUserCircle, IconChevronDown, 
   IconGenie, MODELS_CONFIG, getModelConfigById, IconPhoto, DEFAULT_MODEL_ID,
   IconPencilSquare
 } from '../constants';
@@ -74,7 +74,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       const handleScroll = () => {
           const { scrollTop, scrollHeight, clientHeight } = container;
-          if (scrollHeight - scrollTop - clientHeight > 150) { 
+          if (scrollHeight - scrollTop - clientHeight > 3) { 
               userHasScrolledUpRef.current = true;
           } else if (scrollHeight - scrollTop - clientHeight < 10) {
               userHasScrolledUpRef.current = false;
