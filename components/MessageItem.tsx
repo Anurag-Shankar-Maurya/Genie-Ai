@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { marked, Marked } from 'marked';
 import { Message, MessageRole } from '../types';
@@ -13,7 +12,6 @@ const markedInstance = new Marked({
   mangle: false,
   headerIds: false,
 });
-
 
 interface MessageItemProps {
   message: Message;
@@ -32,7 +30,6 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
     return message.content; // For system/error messages, or if no content, return as is.
   }, [message.content, isModel, isUser]);
 
-
   if (isSystem) {
     return (
       <div className="py-4 text-center text-sm text-gray-500">
@@ -40,7 +37,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
       </div>
     );
   }
-  
+ 
   if (isError) {
     return (
        <div className="flex py-4 px-2 md:px-4 max-w-3xl mx-auto">
@@ -49,7 +46,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
         </div>
         <div className="flex-grow bg-red-900 bg-opacity-30 p-3 rounded-lg">
           <p className="text-sm text-red-400 font-semibold">Error</p>
-          <div className="text-sm text-red-300 mt-1 whitespace-pre-wrap">{message.content}</div>
+          <div className="text-sm text-red-300 mt-1 whitespace-pre-wrap overflow-x-auto">
+            {message.content}
+          </div>
         </div>
       </div>
     );
@@ -65,22 +64,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             <IconGenie className="w-8 h-8 text-teal-400" />
           )}
         </div>
-        <div className="flex-grow">
+        <div className="flex-grow min-w-0">
           <p className="text-sm font-semibold text-gray-200 mb-1">
             {isUser ? 'You' : 'Genie'}
           </p>
           {isUser && message.image && (
             <div className="mb-2 border border-gray-600 rounded-lg overflow-hidden max-w-xs">
-              <img 
-                src={message.image.base64Data} 
-                alt={message.image.fileName || 'Uploaded image'} 
+              <img
+                src={message.image.base64Data}
+                alt={message.image.fileName || 'Uploaded image'}
                 className="max-w-full h-auto object-contain"
               />
             </div>
           )}
           {message.content && (
-            <div 
-              className="text-sm text-gray-300 leading-relaxed message-content"
+            <div
+              className="text-sm text-gray-300 leading-relaxed message-content overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: renderedHtmlContent }}
             />
           )}
