@@ -70,7 +70,13 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
 
   return (
     <div
-      className={`relative group flex items-center px-3 py-2.5 text-sm rounded-md hover:bg-gray-700 ${isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:text-white'}`}
+      onClick={!isRenaming ? onSelect : undefined}
+      className={`relative group flex items-center px-3 py-2.5 text-sm rounded-md hover:bg-gray-700 
+                  ${isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:text-white'} 
+                  ${!isRenaming ? 'cursor-pointer' : ''}`}
+      role={!isRenaming ? "button" : undefined}
+      tabIndex={!isRenaming ? 0 : undefined}
+      onKeyDown={!isRenaming ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(); } : undefined}
     >
       <IconChatBubble className={`w-5 h-5 mr-3 ${session.isPinned ? 'text-teal-400' : 'text-gray-400 group-hover:text-white'}`} />
       {isRenaming ? (
@@ -84,11 +90,11 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
           className="flex-1 bg-transparent border border-gray-600 rounded px-1 py-0.5 text-white focus:ring-1 focus:ring-teal-500 outline-none"
         />
       ) : (
-        <span onClick={onSelect} className="flex-1 truncate cursor-pointer">{session.title}</span>
+        <span className="flex-1 truncate">{session.title}</span>
       )}
       {session.isPinned && <IconPin className="w-4 h-4 text-teal-400 ml-2 flex-shrink-0" />}
       
-      <div className="relative ml-auto opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+      <div className="relative ml-auto">
         <IconButton
           icon={<IconEllipsisVertical className="w-5 h-5" />}
           ariaLabel="Chat options"
